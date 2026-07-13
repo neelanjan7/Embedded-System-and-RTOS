@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arduino Nano 33 BLE Color Sensor</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+    background:#eef2f7;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+}
+
+.container{
+    width:500px;
+    background:white;
+    padding:30px;
+    border-radius:20px;
+    box-shadow:0 10px 25px rgba(0,0,0,.15);
+}
+
+h1{
+    text-align:center;
+    margin-bottom:20px;
+    color:#222;
+}
+
+.colorBox{
+    width:100%;
+    height:170px;
+    border-radius:15px;
+    background:black;
+    border:3px solid #ddd;
+    margin-bottom:25px;
+    transition:.3s;
+}
+
+.value{
+    display:flex;
+    justify-content:space-between;
+    margin-top:15px;
+    font-size:20px;
+    font-weight:bold;
+}
+
+.progress{
+    width:100%;
+    height:22px;
+    background:#ddd;
+    border-radius:30px;
+    overflow:hidden;
+    margin-top:8px;
+}
+
+.bar{
+    height:100%;
+    width:0%;
+    transition:.2s;
+}
+
+.red{
+    background:#ff4444;
+}
+
+.green{
+    background:#32CD32;
+}
+
+.blue{
+    background:#2196F3;
+}
+
+.footer{
+    margin-top:30px;
+    text-align:center;
+    color:#777;
+    font-size:14px;
+}
+
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h1>Arduino Nano 33 BLE</h1>
+
+<div class="colorBox" id="colorBox"></div>
+
+<div class="value">
+<span>🔴 Red</span>
+<span id="red">0</span>
+</div>
+
+<div class="progress">
+<div class="bar red" id="redBar"></div>
+</div>
+
+<div class="value">
+<span>🟢 Green</span>
+<span id="green">0</span>
+</div>
+
+<div class="progress">
+<div class="bar green" id="greenBar"></div>
+</div>
+
+<div class="value">
+<span>🔵 Blue</span>
+<span id="blue">0</span>
+</div>
+
+<div class="progress">
+<div class="bar blue" id="blueBar"></div>
+</div>
+
+<div class="footer">
+Live RGB Values from APDS9960 Sensor
+</div>
+
+</div>
+
+<script>
+
+function updateSensor(){
+
+fetch("/sensor")
+.then(response=>response.json())
+.then(data=>{
+
+let r=data.red;
+let g=data.green;
+let b=data.blue;
+
+document.getElementById("red").innerHTML=r;
+document.getElementById("green").innerHTML=g;
+document.getElementById("blue").innerHTML=b;
+
+// Color Preview
+document.getElementById("colorBox").style.backgroundColor=
+`rgb(${r},${g},${b})`;
+
+// Progress Bars
+document.getElementById("redBar").style.width=(r/1023*100)+"%";
+document.getElementById("greenBar").style.width=(g/1023*100)+"%";
+document.getElementById("blueBar").style.width=(b/1023*100)+"%";
+
+});
+
+}
+
+updateSensor();
+
+setInterval(updateSensor,300);
+
+</script>
+
+</body>
+</html>
