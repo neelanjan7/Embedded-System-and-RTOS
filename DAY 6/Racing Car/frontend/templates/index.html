@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VelocityAI - Motion Controlled Racing Simulator</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Main Style Sheet -->
+    <link rel="stylesheet" href="../static/css/style.css">
+</head>
+<body>
+    <!-- 1. Fullscreen Loader -->
+    <div id="loader" class="loader-overlay">
+        <div class="loader-container">
+            <h2 class="loader-title">VELOCITY AI</h2>
+            <div class="loader-progress-container">
+                <div id="loader-progress-bar" class="loader-progress-inner"></div>
+            </div>
+            <div class="loader-steps">
+                <p id="loader-step-1" class="loader-step">Initialize Renderer...</p>
+                <p id="loader-step-2" class="loader-step">Initialize Physics...</p>
+                <p id="loader-step-3" class="loader-step">Initialize Audio...</p>
+                <p id="loader-step-4" class="loader-step">Initialize Arduino...</p>
+                <p id="loader-step-5" class="loader-step">Initialize Weather...</p>
+                <p id="loader-step-6" class="loader-step">Initialize AI...</p>
+                <p id="loader-step-ready" class="loader-step ready-text">Ready</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1b. Cinematic Splash Screen -->
+    <div id="splash-screen" class="splash-overlay hidden">
+        <div class="splash-content">
+            <h1 class="splash-logo glow-text">VELOCITY AI</h1>
+            <p class="splash-subtitle">Press Any Key to Start</p>
+            <div class="splash-particles"></div>
+        </div>
+    </div>
+
+    <!-- 1c. Main Menu -->
+    <div id="main-menu" class="menu-overlay hidden">
+        <div class="menu-container">
+            <h1 class="menu-title">VELOCITY AI</h1>
+            <div class="menu-buttons">
+                <button id="btn-menu-start" class="btn-menu">Start Driving</button>
+                <button id="btn-menu-sim" class="btn-menu">Simulation</button>
+                <button id="btn-menu-arduino" class="btn-menu">Arduino Mode</button>
+                <button id="btn-menu-settings" class="btn-menu">Settings</button>
+                <button id="btn-menu-controls" class="btn-menu">Controls</button>
+                <button id="btn-menu-about" class="btn-menu">About</button>
+                <button id="btn-menu-exit" class="btn-menu">Exit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Notification System Container -->
+    <div id="notification-container"></div>
+
+    <!-- 3. Master Application Grid -->
+    <div id="app-viewport">
+        <!-- Floating HUD Overlay Layout -->
+        <!-- Floating HUD Overlay Layout -->
+        <div id="hud-viewport-container">
+            <!-- HUD Top-Left Panel: Speedometer, RPM, Gear, Shield Health -->
+            <div class="hud-floating-panel" id="hud-top-left">
+                <div class="gear-and-speed">
+                    <div class="gear-box">
+                        <span class="hud-label">GEAR</span>
+                        <span id="hud-gear" class="hud-value-gear">N</span>
+                    </div>
+                    <div class="speed-box">
+                        <span id="hud-speed" class="hud-value-large">000</span>
+                        <span class="hud-unit">KM/H</span>
+                    </div>
+                </div>
+                <div class="rpm-container">
+                    <div class="rpm-label-row">
+                        <span class="hud-label">ENGINE RPM</span>
+                        <span id="hud-rpm-val" class="hud-value-small">1000</span>
+                    </div>
+                    <div class="rpm-gauge-outer">
+                        <div id="hud-rpm-bar" class="rpm-gauge-inner" style="width: 15%;"></div>
+                    </div>
+                </div>
+                <div class="health-container spacer-top">
+                    <div class="health-label-row">
+                        <span class="hud-label">SHIELD HEALTH</span>
+                        <span id="hud-health-val" class="hud-value-small">100%</span>
+                    </div>
+                    <div class="health-gauge-outer">
+                        <div id="hud-health-bar" class="health-gauge-inner" style="width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HUD Top-Center Panel: Score, Distance -->
+            <div class="hud-floating-panel" id="hud-top-center">
+                <div class="score-container">
+                    <span class="hud-label">SCORE</span>
+                    <span id="hud-score" class="hud-value-score text-cyan">000000</span>
+                </div>
+                <div class="distance-container spacer-top">
+                    <div class="distance-label-row">
+                        <span class="hud-label">DISTANCE</span>
+                        <span class="hud-distance-val">
+                            <span id="hud-distance" class="hud-value-medium">0000</span>
+                            <span class="hud-unit">m</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HUD Top-Right Panel: APDS9960 Gesture, Proximity, Color -->
+            <div class="hud-floating-panel" id="hud-top-right">
+                <div class="telemetry-cell">
+                    <span class="hud-label">APDS9960 GESTURE</span>
+                    <span id="hud-gesture" class="hud-value-alert">NONE</span>
+                </div>
+                <div class="telemetry-cell spacer-top">
+                    <div class="sensor-label-row">
+                        <span class="hud-label">PROXIMITY</span>
+                        <span id="hud-proximity-val" class="hud-value-small">0</span>
+                    </div>
+                    <div class="proximity-bar-outer">
+                        <div id="hud-proximity-bar" class="proximity-bar-inner" style="width: 0%;"></div>
+                    </div>
+                </div>
+                <div class="telemetry-cell spacer-top">
+                    <span class="hud-label">SURFACE COLOR</span>
+                    <div class="color-indicator-row">
+                        <div id="color-preview" class="color-circle"></div>
+                        <div class="color-values">
+                            R: <span id="color-r">0</span> 
+                            G: <span id="color-g">0</span> 
+                            B: <span id="color-b">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HUD Bottom-Left Panel: Connection Status, Weather, Time -->
+            <div class="hud-floating-panel" id="hud-bottom-left">
+                <div class="connection-status-row">
+                    <span id="status-dot" class="dot disconnected"></span>
+                    <span id="status-label" class="hud-label-bold">DISCONNECTED</span>
+                </div>
+                <div id="sim-mode-indicator" class="weather-time-tag">TIME: 12:00 | WEATHER: SUNNY</div>
+            </div>
+
+            <!-- HUD Bottom-Right Panel: FPS, CRC Loss, Toolbar -->
+            <div class="hud-floating-panel" id="hud-bottom-right">
+                <div class="diagnostics-row">
+                    <div class="diag-item">
+                        <span class="hud-label">FPS</span>
+                        <span id="hud-fps" class="hud-value-small">60</span>
+                    </div>
+                    <div class="diag-item">
+                        <span class="hud-label">CRC LOSS</span>
+                        <span id="hud-loss" class="hud-value-small">0.0%</span>
+                    </div>
+                </div>
+                <div class="toolbar-row">
+                    <button id="btn-toggle-connection" class="icon-btn" title="Serial Connection">🔌</button>
+                    <button id="btn-toggle-calibration" class="icon-btn" title="Calibration">🎯</button>
+                    <button id="btn-toggle-settings" class="icon-btn" title="Settings">⚙️</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. HTML5 Game Canvas -->
+        <main id="canvas-container">
+            <canvas id="game-canvas"></canvas>
+        </main>
+    </div>
+
+    <!-- 5. Connection Dialog Card -->
+    <div id="dialog-connection" class="dialog-overlay hidden">
+        <div class="dialog-card">
+            <div class="dialog-header">
+                <h3>Controller Connection</h3>
+                <button class="btn-close-dialog" data-target="dialog-connection">×</button>
+            </div>
+            <div class="dialog-body">
+                <div class="form-group">
+                    <label for="select-port">Serial Port:</label>
+                    <select id="select-port" class="select-field">
+                        <option value="">Scan Ports...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="select-baud">Baud Rate:</label>
+                    <select id="select-baud" class="select-field">
+                        <option value="115200">115200 (Default)</option>
+                        <option value="9600">9600</option>
+                        <option value="57600">57600</option>
+                    </select>
+                </div>
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="check-sim-mode">
+                    <label for="check-sim-mode">Enable Simulation (Mock Input)</label>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button id="btn-port-scan" class="btn btn-secondary">Scan Ports</button>
+                <button id="btn-port-connect" class="btn btn-primary">Establish Link</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Calibration Dialog Card (Wizard) -->
+    <div id="dialog-calibration" class="dialog-overlay hidden">
+        <div class="dialog-card calibration-wizard-card">
+            <div class="dialog-header">
+                <h3>Arduino Calibration Wizard</h3>
+                <button class="btn-close-dialog" data-target="dialog-calibration">×</button>
+            </div>
+            <div class="dialog-body wizard-body">
+                <div class="wizard-steps">
+                    <div class="wizard-step active" id="wizard-step-1">
+                        <h4>Step 1: Keep board flat</h4>
+                        <p>Place the Arduino Nano 33 BLE Sense flat on a table.</p>
+                        <div class="telemetry-bar">Roll: <strong id="cal-roll-1">0.0°</strong> | Pitch: <strong id="cal-pitch-1">0.0°</strong></div>
+                    </div>
+                    <div class="wizard-step hidden" id="wizard-step-2">
+                        <h4>Step 2: Tilt Left</h4>
+                        <p>Tilt the board left to 45 degrees.</p>
+                        <div class="telemetry-bar">Roll: <strong id="cal-roll-2">0.0°</strong></div>
+                    </div>
+                    <div class="wizard-step hidden" id="wizard-step-3">
+                        <h4>Step 3: Tilt Right</h4>
+                        <p>Tilt the board right to 45 degrees.</p>
+                        <div class="telemetry-bar">Roll: <strong id="cal-roll-3">0.0°</strong></div>
+                    </div>
+                    <div class="wizard-step hidden" id="wizard-step-4">
+                        <h4>Step 4: Tilt Forward</h4>
+                        <p>Tilt the board forward to 30 degrees (throttle).</p>
+                        <div class="telemetry-bar">Pitch: <strong id="cal-pitch-4">0.0°</strong></div>
+                    </div>
+                    <div class="wizard-step hidden" id="wizard-step-5">
+                        <h4>Step 5: Complete</h4>
+                        <p>Calibration successful!</p>
+                        <div class="calibration-success-icon">✔️</div>
+                    </div>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button id="btn-wizard-next" class="btn btn-primary">Start</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. Settings Dialog Card (Expanded) -->
+    <div id="dialog-settings" class="dialog-overlay hidden">
+        <div class="dialog-card settings-card">
+            <div class="dialog-header">
+                <h3>Simulator Settings</h3>
+                <button class="btn-close-dialog" data-target="dialog-settings">×</button>
+            </div>
+            <div class="dialog-body settings-body">
+                <div class="settings-tabs">
+                    <button class="tab-btn active" data-tab="tab-graphics">Graphics</button>
+                    <button class="tab-btn" data-tab="tab-controls">Controls</button>
+                    <button class="tab-btn" data-tab="tab-audio">Audio</button>
+                    <button class="tab-btn" data-tab="tab-accessibility">Accessibility</button>
+                </div>
+                <div class="settings-content">
+                    <div id="tab-graphics" class="settings-pane active">
+                        <div class="form-group checkbox-group"><input type="checkbox" id="check-bloom" checked><label for="check-bloom">Bloom FX</label></div>
+                        <div class="form-group checkbox-group"><input type="checkbox" id="check-motion-blur" checked><label for="check-motion-blur">Motion Blur</label></div>
+                        <div class="form-group checkbox-group"><input type="checkbox" id="check-fullscreen"><label for="check-fullscreen">Fullscreen</label></div>
+                        <div class="form-group slider-group"><label>Graphics Quality</label><select id="select-quality" class="select-field"><option>Ultra</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+                        <div class="form-group slider-group"><label>Weather Intensity</label><input type="range" id="range-weather" min="0" max="100" value="50"></div>
+                        <div class="form-group slider-group"><label>Day/Night Speed</label><input type="range" id="range-daynight" min="0" max="10" value="1"></div>
+                        <div class="form-group slider-group"><label>Particle Density</label><input type="range" id="range-particles" min="0" max="100" value="100"></div>
+                    </div>
+                    <div id="tab-controls" class="settings-pane hidden">
+                        <div class="form-group slider-group"><label>Steering Deadzone: <span id="val-deadzone">2.0</span>°</label><input type="range" id="range-deadzone" min="0" max="10" step="0.5" value="2.0"></div>
+                        <div class="form-group slider-group"><label>Throttle Pitch Limit: <span id="val-pitch-limit">30</span>°</label><input type="range" id="range-pitch-limit" min="10" max="45" step="5" value="30"></div>
+                        <div class="form-group slider-group"><label>Camera Sensitivity</label><input type="range" id="range-cam-sens" min="1" max="10" value="5"></div>
+                        <div class="form-group slider-group"><label>Motion Sensitivity</label><input type="range" id="range-motion-sens" min="1" max="10" value="5"></div>
+                    </div>
+                    <div id="tab-audio" class="settings-pane hidden">
+                        <div class="form-group checkbox-group"><input type="checkbox" id="check-enable-audio" checked><label for="check-enable-audio">Enable Audio</label></div>
+                        <div class="form-group slider-group"><label>Master Volume</label><input type="range" id="range-volume" min="0" max="100" value="80"></div>
+                    </div>
+                    <div id="tab-accessibility" class="settings-pane hidden">
+                        <div class="form-group checkbox-group"><input type="checkbox" id="check-colorblind"><label for="check-colorblind">Color Blind Mode</label></div>
+                        <div class="form-group checkbox-group"><input type="checkbox" id="check-large-text"><label for="check-large-text">Large Text</label></div>
+                        <div class="form-group checkbox-group"><input type="checkbox" id="check-reduce-motion"><label for="check-reduce-motion">Reduce Motion</label></div>
+                        <div class="form-group checkbox-group"><input type="checkbox" id="check-mute-all"><label for="check-mute-all">Mute All</label></div>
+                        <div class="form-group slider-group"><label>UI Scaling</label><input type="range" id="range-ui-scale" min="80" max="150" value="100"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button id="btn-reset-settings" class="btn btn-secondary">Reset</button>
+                <button id="btn-save-settings" class="btn btn-primary">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. Pause Dialog Card -->
+    <div id="dialog-pause" class="dialog-overlay hidden">
+        <div class="dialog-card">
+            <div class="dialog-header">
+                <h3>Simulation Paused</h3>
+            </div>
+            <div class="dialog-body">
+                <p>Press ESC or click below to resume the drive.</p>
+            </div>
+            <div class="dialog-footer">
+                <button id="btn-resume" class="btn btn-primary">Resume Simulation</button>
+                <button id="btn-restart-paused" class="btn btn-secondary">Restart</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 9. Game Over Dialog Card -->
+    <div id="dialog-game-over" class="dialog-overlay hidden">
+        <div class="dialog-card">
+            <div class="dialog-header">
+                <h3>CRITICAL ERROR: HULL SHIELD DEPLETED</h3>
+            </div>
+            <div class="dialog-body">
+                <div class="stat-row">
+                    <span class="stat-label">FINAL SCORE</span>
+                    <span id="game-over-score" class="stat-value text-cyan">000000</span>
+                </div>
+                <div class="stat-row spacer-top">
+                    <span class="stat-label">NEAR MISSES</span>
+                    <span id="game-over-near-miss" class="stat-value">0</span>
+                </div>
+                <div class="stat-row spacer-top">
+                    <span class="stat-label">COLLISIONS</span>
+                    <span id="game-over-collisions" class="stat-value text-red">0</span>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button id="btn-restart" class="btn btn-primary">Restart Simulation</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 10. Performance Panel (Dev Overlay) -->
+    <div id="performance-panel" class="perf-panel hidden">
+        <h4>Dev Overlay</h4>
+        <div class="perf-row"><span>FPS:</span> <span id="perf-fps">0</span></div>
+        <div class="perf-row"><span>Frame Time:</span> <span id="perf-frametime">0ms</span></div>
+        <div class="perf-row"><span>CPU Est:</span> <span id="perf-cpu">0%</span></div>
+        <div class="perf-row"><span>Mem Est:</span> <span id="perf-mem">0MB</span></div>
+        <div class="perf-row"><span>Draw Calls:</span> <span id="perf-draws">0</span></div>
+        <div class="perf-row"><span>Particles:</span> <span id="perf-particles">0</span></div>
+        <div class="perf-row"><span>Audio Nodes:</span> <span id="perf-audio">0</span></div>
+        <div class="perf-row"><span>Lat:</span> <span id="perf-lat">0ms</span></div>
+        <div class="perf-row"><span>Pkt Loss:</span> <span id="perf-pkt">0%</span></div>
+    </div>
+
+    <!-- 11. Statistics & Achievements Modal -->
+    <div id="dialog-stats" class="dialog-overlay hidden">
+        <div class="dialog-card">
+            <div class="dialog-header">
+                <h3>Run Statistics</h3>
+                <button class="btn-close-dialog" data-target="dialog-stats">×</button>
+            </div>
+            <div class="dialog-body stats-grid">
+                <div class="stat-item"><span>Distance</span> <strong id="stat-dist">0 km</strong></div>
+                <div class="stat-item"><span>Top Speed</span> <strong id="stat-top-speed">0 km/h</strong></div>
+                <div class="stat-item"><span>Avg Speed</span> <strong id="stat-avg-speed">0 km/h</strong></div>
+                <div class="stat-item"><span>Collisions</span> <strong id="stat-col">0</strong></div>
+                <div class="stat-item"><span>Near Misses</span> <strong id="stat-miss">0</strong></div>
+                <div class="stat-item"><span>Boost Uses</span> <strong id="stat-boost">0</strong></div>
+                <div class="stat-item"><span>Drive Time</span> <strong id="stat-time">00:00</strong></div>
+            </div>
+            <div class="dialog-footer">
+                <button class="btn btn-primary btn-close-dialog" data-target="dialog-stats">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 12. Photo Mode & Replay UI overlays -->
+    <div id="photo-mode-ui" class="overlay-ui hidden">
+        <div class="photo-controls">
+            <span>Orbit: Mouse Drag</span>
+            <span>Zoom: Scroll</span>
+            <button id="btn-capture-shot" class="btn btn-primary">Capture Screenshot</button>
+            <button id="btn-exit-photo" class="btn btn-secondary">Exit Photo Mode</button>
+        </div>
+    </div>
+
+    <div id="replay-ui" class="overlay-ui hidden">
+        <div class="replay-controls">
+            <span class="replay-indicator">🔴 REPLAY (Last 30s)</span>
+            <button id="btn-exit-replay" class="btn btn-secondary">Stop Replay</button>
+        </div>
+    </div>
+
+    <!-- Core Scripts -->
+    <script src="../static/js/config.js"></script>
+    <script src="../static/js/assets.js"></script>
+    <script src="../static/js/camera.js"></script>
+    <script src="../static/js/road.js"></script>
+    <script src="../static/js/renderer.js"></script>
+    <script src="../static/js/controls.js"></script>
+    <script src="../static/js/player.js"></script>
+    <script src="../static/js/vehicle_renderer.js"></script>
+    <script src="../static/js/traffic_vehicle.js"></script>
+    <script src="../static/js/traffic_manager.js"></script>
+    <script src="../static/js/obstacle_manager.js"></script>
+    <script src="../static/js/spawn_manager.js"></script>
+    <script src="../static/js/game_state.js"></script>
+    <script src="../static/js/damage_system.js"></script>
+    <script src="../static/js/score_manager.js"></script>
+    <script src="../static/js/collision_manager.js"></script>
+    <script src="../static/js/daynight_manager.js"></script>
+    <script src="../static/js/weather_manager.js"></script>
+    <script src="../static/js/lighting_manager.js"></script>
+    <script src="../static/js/environment_fx.js"></script>
+    <script src="../static/js/sound.js"></script>
+    <script src="../static/js/ambient_audio.js"></script>
+    <script src="../static/js/connection.js"></script>
+    <script src="../static/js/ui.js"></script>
+    <script src="../static/js/game.js"></script>
+</body>
+</html>
