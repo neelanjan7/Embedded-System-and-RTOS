@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Visitor Detection & Monitoring System</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header>
+
+    <h1>🚪 Smart Visitor Detection & Monitoring System</h1>
+
+    <div class="header-buttons">
+
+        <button id="themeBtn">
+            🌙 Dark Mode
+        </button>
+
+        <button id="snapshotBtn">
+            📸 Snapshot
+        </button>
+
+    </div>
+
+</header>
+
+
+<div id="visitorAlert">
+    🚨 VISITOR DETECTED
+</div>
+
+
+<div class="container">
+
+    <div class="camera-card">
+
+        <h2>📹 Live Camera</h2>
+
+        <img
+            id="video"
+            src="{{ url_for('video_feed') }}"
+        >
+
+    </div>
+
+
+    <div class="info">
+
+        <div class="card">
+
+            <h2>📏 Distance</h2>
+
+            <p id="distance">
+                0 cm
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h2>🚶 Status</h2>
+
+            <p id="status">
+                WAITING
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h2>🔌 Arduino</h2>
+
+            <p id="arduino">
+                🔴 Disconnected
+            </p>
+
+        </div>
+
+        <div class="card">
+
+    <h2>😀 Faces</h2>
+
+    <p id="faces">0</p>
+
+</div>
+
+    </div>
+
+</div>
+
+<script>
+
+let visitorDetected = false;
+
+// ---------------- DARK MODE ----------------
+
+const themeBtn = document.getElementById("themeBtn");
+
+if(localStorage.getItem("theme") === "dark"){
+    document.body.classList.add("dark");
+    themeBtn.innerHTML = "☀ Light Mode";
+}
+
+themeBtn.onclick = function(){
+
+    document.body.classList.toggle("dark");
+
+    if(document.body.classList.contains("dark")){
+        localStorage.setItem("theme","dark");
+        themeBtn.innerHTML="☀ Light Mode";
+    }
+    else{
+        localStorage.setItem("theme","light");
+        themeBtn.innerHTML="🌙 Dark Mode";
+    }
+
+}
+
+
+// ---------------- SNAPSHOT ----------------
+
+document.getElementById("snapshotBtn").onclick=function(){
+
+    const img=document.getElementById("video");
+
+    const canvas=document.createElement("canvas");
+
+    canvas.width=img.naturalWidth || img.width;
+    canvas.height=img.naturalHeight || img.height;
+
+    const ctx=canvas.getContext("2d");
+
+    ctx.drawImage(img,0,0);
+
+    const link=document.createElement("a");
+
+    link.download="snapshot.png";
+
+    link.href=canvas.toDataURL("image/png");
+
+    link.click();
+
+}
+
+
+// ---------------- NOTIFICATION ----------------
+
+if(Notification.permission!=="granted"){
+    Notification.requestPermission();
+}
+
+
+// ---------------- UPDATE SENSOR ----------------
+
+function updateData(){
+
+fetch("/data")
+
+.then(response=>response.json())
+
+.then(data=>{
+
+    document.getElementById("distance").innerHTML =
+        data.distance + " cm";
+
+    document.getElementById("status").innerHTML =
+        data.status;
+
+    document.getElementById("arduino").innerHTML =
+        data.connected ?
+        "🟢 Connected" :
+        "🔴 Disconnected";
+        
+    document.getElementById("faces").innerHTML =
+    data.faces;
+
+
+    const alertBox=document.getElementById("visitorAlert");
+
+
+    if(data.distance < 30){
+
+        alertBox.style.display="block";
+
+        document.getElementById("status").style.color="#ff3b30";
+
+        if(!visitorDetected){
+
+            visitorDetected=true;
+
+            // Voice Alert
+
+            const speech=new SpeechSynthesisUtterance(
+                "Visitor Detected"
+            );
+
+            speech.rate=1;
+
+            window.speechSynthesis.speak(speech);
+
+
+            // Browser Notification
+
+            if(Notification.permission==="granted"){
+
+                new Notification(
+                    "🚨 Visitor Detected",
+                    {
+                        body:"Someone is near the entrance."
+                    }
+                );
+
+            }
+
+        }
+
+    }
+
+    else{
+
+        alertBox.style.display="none";
+
+        visitorDetected=false;
+
+        document.getElementById("status").style.color="#22c55e";
+
+    }
+
+})
+
+.catch(err=>console.log(err));
+
+}
+
+setInterval(updateData,1000);
+
+updateData();
+
+</script>
+
+
+</body>
+</html>
